@@ -1,0 +1,15 @@
+{
+  "name": "annual-fortune-app",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/core",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run build --workspace @annual-fortune/core && npm run dev --workspace @annual-fortune/web",
+    "build": "npm run build --workspaces --if-present",
+    "build:single": "npm run build --workspace @annual-fortune/core && npm run build:single --workspace @annual-fortune/web",
+    "test": "npm run test --workspace @annual-fortune/core"
+  }
+}

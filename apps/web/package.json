@@ -1,0 +1,29 @@
+{
+  "name": "@annual-fortune/web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "build:single": "tsc -p tsconfig.json && vite build --mode single",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@annual-fortune/core": "*",
+    "@vitejs/plugin-react": "^4.4.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.7",
+    "tailwindcss": "^4.1.11",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^0.21.1",
+    "vite-plugin-singlefile": "^2.2.0"
+  }
+}

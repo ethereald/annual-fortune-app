@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="44" fill="#203a34"/>
+  <circle cx="96" cy="96" r="57" fill="none" stroke="#d8bb82" stroke-width="2"/>
+  <circle cx="96" cy="96" r="43" fill="none" stroke="#d8bb82" stroke-opacity=".45"/>
+  <path d="M96 28v20m0 96v20M28 96h20m96 0h20M48 48l14 14m68 68 14 14m0-96-14 14M62 130l-14 14" stroke="#d8bb82" stroke-width="2"/>
+  <text x="96" y="108" text-anchor="middle" fill="#f7f4ef" font-size="42" font-family="serif">流</text>
+</svg>
