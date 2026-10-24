@@ -1,0 +1,80 @@
+[
+  {
+    "id": "male-spring",
+    "request": {
+      "birthDate": "1990-04-12",
+      "birthTime": "08:30",
+      "gender": "male",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  },
+  {
+    "id": "female-summer",
+    "request": {
+      "birthDate": "1988-08-08",
+      "birthTime": "13:20",
+      "gender": "female",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  },
+  {
+    "id": "male-winter-night",
+    "request": {
+      "birthDate": "1975-12-03",
+      "birthTime": "21:10",
+      "gender": "male",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  },
+  {
+    "id": "female-autumn-morning",
+    "request": {
+      "birthDate": "2001-10-19",
+      "birthTime": "06:45",
+      "gender": "female",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  },
+  {
+    "id": "male-late-zi",
+    "request": {
+      "birthDate": "1996-02-29",
+      "birthTime": "23:30",
+      "gender": "male",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  },
+  {
+    "id": "female-noon",
+    "request": {
+      "birthDate": "1983-06-21",
+      "birthTime": "12:00",
+      "gender": "female",
+      "city": "Taipei",
+      "yearFrom": 2027,
+      "yearTo": 2027,
+      "detailLevel": "standard",
+      "schoolSetting": "quanshu"
+    }
+  }
+]

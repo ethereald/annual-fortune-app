@@ -1,47 +1,36 @@
-# Phase 2 Handoff: Snippet Pipeline
+# Handoff: Phase 2 complete (partial coverage) → Phase 3
 
-## Next-session focus
+## State
 
-Implement Phase 2 from [`implementation_plan.md`](./implementation_plan.md): build the licensed interpretation-snippet extraction/authoring pipeline and its coverage/size gates. Phase 1 is complete; its current state and constraints are summarized in [`handoff-phase-1.md`](./handoff-phase-1.md). Use those documents rather than redoing the engine and UI implementation.
+Phase 2 build-time pipeline is done and populated from real, redistributable content. The app UI still shows only the 命盤; nothing consumes the snippets until Phase 3.
 
-## Current verified state
+| Gate | Result |
+|---|---|
+| Rights | pass (CC BY 4.0 dataset + public-domain 《紫微斗数全书》; attribution in `apps/web/src/third-party-licenses.txt`) |
+| Size | pass (about 36 KB compressed of 15 MiB) |
+| Coverage | **partial**: major-star matrix 84/182 (46.2%) |
+| Content readiness | **partial** |
 
-- Natal and annual chart structure are calculated locally through the Web Worker; the app renders results and exports Markdown.
-- Third-party MIT notices are displayed in the app and included in the single-file HTML.
-- The standalone build embeds its worker and emits no separate worker asset.
-- Latest validation passed: `npm test` (17 tests), `npm run build`, `npm run build:single`, moderate-level npm audit (0 vulnerabilities), and all four assertions in `.tsupgrader/runtime-validation/eval-plan.json`.
-- The production build reports an oversized JavaScript-chunk warning; builds still pass.
+Content: 84 interpretation keys (summary/standard/deep where available) and 222 classical references. Quoted 倪海厦《天纪》 text is excluded (outside the license grant).
 
-## Phase 2 guardrails
+## Gaps
+- `overview` 0/14 (leads entangled with 倪师 quotes), `career` 3/14, `family` 2/14, `children` 5/14, `personality` 3/14.
+- Sample-chart coverage per dimension varies (for example career 0/5, family 0/9).
+- Only the 1990 year file was mined; other years are likely to repeat but this is unverified.
+- Minor, lucky and sha stars, brightness and 四化 variants have no lookups (resolved to the star and palace base key).
 
-- Follow the source, licensing, provenance, and size gates in [`implementation_plan.md`](./implementation_plan.md). Verify permission and attribution before using any snippet source.
-- Keep extraction/authoring tools build-time-only. Do not ship source datasets or bundle the 56 GB dataset described by the plans.
-- Produce small, deduplicated, properly attributed dimension shards. Include summary/standard/deep tier metadata and a versioned manifest tied to the pinned school setting.
-- Add coverage checks using representative charts; surface missing lookups rather than inventing interpretations.
-- Measure shard and compressed output sizes before deciding whether the data approach passes its gate. Do not begin report prose or interpretation behavior until licensing, coverage, and size are demonstrated.
+## Needs a human
+- `rightsConfirmed: true` in `sources.json` is my reading of the dataset's `DATASET-LICENSE`. Verify before release.
+- The dataset's engine commit (`c25dd495`) differs from this app's pin (`1059c347`). Lookups are by star and palace only, so charts are unaffected; recheck if the pin changes.
 
-## Relevant references
+## Phase 3 rules
+- Consume only content with `contentReady` of `partial` or `pass`.
+- When a lookup is missing, omit that section or state it is unavailable. Never generate filler interpretation.
+- To widen coverage: mine more year files, or author original text with a reviewed source record.
 
-- [`implementation_plan.md`](./implementation_plan.md): phase requirements, source options, architecture, and constraints.
-- [`README.md`](./README.md): engine provenance, calculation boundaries, and current limitations.
-- [`packages/core/src/engine.ts`](./packages/core/src/engine.ts): chart calculation API for coverage fixtures.
-- [`packages/core/src/engine.test.ts`](./packages/core/src/engine.test.ts): existing deterministic chart expectations.
-- [`apps/web/src/third-party-licenses.txt`](./apps/web/src/third-party-licenses.txt): notices currently bundled and shown in the app.
-- [`.tsupgrader/runtime-validation/eval-plan.json`](./.tsupgrader/runtime-validation/eval-plan.json): repeatable baseline checks for build, standalone build, tests, and dev-server response.
+## Commands
+- `npm run snippets:mine --workspace @annual-fortune/core -- <year.jsonl.zst> <SHA256SUMS.txt>`
+- `npm run snippets:build`, `npm run snippets:coverage`
+- `npm test`, `npm run build`, `npm run build:single`
 
-## Suggested skills
-
-- `implementing-code` — use for a bounded implementation batch with tests and traceability.
-- `typescript-runtime-validation` — use after pipeline changes to validate TypeScript builds, tests, and runtime behavior.
-- `assessment-report-converter` — only if an existing third-party tabular report needs to be interpreted and converted into structured assessment data; it is not a substitute for authoring or licensing app interpretation text.
-
-## Useful commands
-
-From the project root:
-
-```sh
-npm test
-npm run build
-npm run build:single
-npm audit --audit-level=moderate
-```
+Details: `packages/core/data/authoring/README.md`.

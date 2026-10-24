@@ -1,3 +1,11 @@
+Zi Wei Dou Shu open interpretation dataset v4.0 (interpretation text)
+本项目使用了 紫微斗数开源解读数据集 v4.0（674,976 张命盘 × 13 维）
+来源：https://github.com/Renhuai123/ziwei-doushu
+作者：王多鱼AI
+License: CC BY 4.0 (https://github.com/Renhuai123/ziwei-doushu/blob/main/DATASET-LICENSE)
+Only deduplicated excerpts are used. Quoted 倪海厦《天纪》 text is outside this license and is not used.
+《紫微斗数全书》 classical text is in the public domain.
+
 Zi Wei Dou Shu engine source
 Repository: https://github.com/Renhuai123/ziwei-doushu
 Pinned commit: 1059c347231c636bd86ddb78fd8ed430d5de8d2a

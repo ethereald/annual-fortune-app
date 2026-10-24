@@ -1,4 +1,5 @@
 import { astro } from "iztro";
+import { Lunar, LunarMonth } from "lunar-javascript";
 import { clockTimeToBranchIndex, validateFortuneRequest } from "./validation.js";
 import type { FortuneRequest } from "./types.js";
 import { generateChart } from "./ziwei/algorithm.js";
@@ -26,6 +27,19 @@ export interface AnnualCalculation {
     jiangqian12: string[];
     suiqian12: string[];
   };
+  months: MonthlyCalculation[];
+}
+
+export interface MonthlyCalculation {
+  lunarMonth: number;
+  solarDate: string;
+  solarStart: string;
+  solarEnd: string;
+  palaceIndex: number;
+  palaceNames: string[];
+  heavenlyStem: string;
+  earthlyBranch: string;
+  transformations: { type: "禄" | "权" | "科" | "忌"; star: string }[];
 }
 
 const BRANCH_NAMES = [
@@ -118,8 +132,41 @@ export function computeYear(request: FortuneRequest, year: number): AnnualCalcul
   );
   const { yearly } = astrolabe.horoscope(`${year}-06-01`, birthInfo.hour);
 
+  const months: MonthlyCalculation[] = [];
+  const monthKeys = Array.from({ length: 12 }, (_, index) => index + 1).flatMap((month) =>
+    LunarMonth.fromYm(year, -month) ? [month, -month] : [month],
+  );
+  for (const monthKey of monthKeys) {
+    const lunarMonth = monthKey;
+    const solar = Lunar.fromYmd(year, lunarMonth, 15).getSolar();
+    const solarDate = `${solar.getYear()}-${solar.getMonth()}-${solar.getDay()}`;
+    const first = Lunar.fromYmd(year, lunarMonth, 1).getSolar();
+    const dayCount = LunarMonth.fromYm(year, lunarMonth)?.getDayCount() ?? 30;
+    const startUtc = Date.UTC(first.getYear(), first.getMonth() - 1, first.getDay());
+    const endDate = new Date(startUtc + (dayCount - 1) * 86_400_000);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    const solarStart = `${first.getYear()}-${pad(first.getMonth())}-${pad(first.getDay())}`;
+    const solarEnd = `${endDate.getUTCFullYear()}-${pad(endDate.getUTCMonth() + 1)}-${pad(endDate.getUTCDate())}`;
+    const { monthly } = astrolabe.horoscope(solarDate, birthInfo.hour);
+    months.push({
+      lunarMonth,
+      solarDate,
+      solarStart,
+      solarEnd,
+      palaceIndex: monthly.index,
+      palaceNames: [...monthly.palaceNames],
+      heavenlyStem: monthly.heavenlyStem,
+      earthlyBranch: monthly.earthlyBranch,
+      transformations: TRANSFORMATION_TYPES.flatMap((type, index) => {
+        const star = monthly.mutagen[index];
+        return star ? [{ type, star }] : [];
+      }),
+    });
+  }
+
   return {
     year,
+    months,
     palaceIndex: yearly.index,
     palaceNames: [...yearly.palaceNames],
     heavenlyStem: yearly.heavenlyStem,

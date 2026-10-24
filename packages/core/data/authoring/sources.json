@@ -1,0 +1,12 @@
+[
+  {
+    "id": "ziwei-doushu-interp-v4",
+    "title": "紫微斗数开源解读数据集 v4.0 (Ziwei Doushu open interpretation dataset v4.0)",
+    "url": "https://github.com/Renhuai123/ziwei-doushu/releases/tag/v4.0-13d",
+    "version": "v4.0-13d, content version ca268829f7a9, year-1990.jsonl.zst sha256 d89f446543a2f542c03b8df2e81cfc48cf422b7968bf833d6ceeebfd3f94f4da",
+    "license": "CC BY 4.0 (dataset). Quoted 倪海厦《天纪》 text is excluded from the grant and is not used. 《紫微斗数全书》 classical text is public domain.",
+    "attribution": "本项目使用了 紫微斗数开源解读数据集 v4.0（674,976 张命盘 × 13 维）。来源：https://github.com/Renhuai123/ziwei-doushu 作者：王多鱼AI",
+    "rightsEvidence": "https://raw.githubusercontent.com/Renhuai123/ziwei-doushu/main/DATASET-LICENSE: free use including commercial use with attribution; scope covers release tag v4.0-13d; 古籍原文 public domain; 倪师 quotes excluded.",
+    "rightsConfirmed": true
+  }
+]

@@ -34,6 +34,15 @@ import {
   validateFortuneRequest,
 } from "@annual-fortune/core/validation";
 import thirdPartyLicenses from "./third-party-licenses.txt?raw";
+import interpretationData from "./interpretations.json";
+import { buildYearlyFortune, fortuneToMarkdown } from "./yearly-fortune";
+import { normalizePalaceName, proseToTW, toTW } from "./zh";
+
+type InterpretationEntry = { dimension: string; summary?: string; standard?: string; deep?: string };
+const INTERPRETATIONS = interpretationData as {
+  attribution: string[];
+  palaces: Record<string, Record<string, InterpretationEntry[]>>;
+};
 
 const STORAGE_KEY = "annual-fortune.profiles.v1";
 const YEAR = new Date().getFullYear();
@@ -114,6 +123,10 @@ function App() {
   const range = useMemo(
     () => Math.max(1, request.yearTo - request.yearFrom + 1),
     [request.yearFrom, request.yearTo],
+  );
+  const yearlyFortune = useMemo(
+    () => (natalCalculation && annualCalculation ? buildYearlyFortune(natalCalculation, annualCalculation) : null),
+    [natalCalculation, annualCalculation],
   );
 
   useEffect(() => {
@@ -369,48 +382,73 @@ function App() {
     }
   }
 
-  function downloadRequest() {
-    if (!reportRequest || !natalCalculation || !annualCalculation) return;
-    const markdown = [
-      "# 流年命盤計算摘要",
-      "",
-      "> 本檔案包含命盤結構資料，不含運勢斷語或解讀。出生資料只在本機計算。",
-      "",
-      `- 出生日期：${reportRequest.birthDate}`,
-      `- 出生時間：${reportRequest.birthTime}`,
-      `- 性別：${reportRequest.gender}`,
-      `- 出生地：${reportRequest.city}`,
-      `- 流年範圍：${reportRequest.yearFrom}–${reportRequest.yearTo}`,
-      `- 詳細程度：${detailLabels[reportRequest.detailLevel]}`,
-      `- 流派設定：紫微斗數全書`,
-      `- 排盤日期：${natalCalculation.chartDate}${natalCalculation.lateZishiAdjusted ? "（晚子時按次日換日）" : ""}`,
-      `- 時辰：${natalCalculation.hourBranchName}時`,
-      `- 真太陽時校正：未套用（尚無城市座標資料）`,
-      "",
-      "## 本命盤十二宮",
-      "",
-      ...natalCalculation.chart.palaces.map((palace) => {
-        const branch = HOUR_BRANCHES[palace.branch] ?? "—";
-        const stars = palace.stars.map((star) => star.name).join("、") || "無主星";
-        return `- ${palace.name}（${branch}）：${stars}`;
-      }),
-      "",
-      `## ${annualCalculation.year} 年流年`,
-      "",
-      `- 流年干支：${annualCalculation.heavenlyStem}${annualCalculation.earthlyBranch}`,
-      ...annualCalculation.transformations.map(({ type, star }) => `- 化${type}：${star}`),
-      "",
-      "本機使用紫微斗數排盤引擎；計算結果不包含經授權的解讀內容。",
-    ].join("\n");
+  function saveMarkdown(markdown: string, filename: string) {
     const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `annual-fortune-${annualCalculation.year}.md`;
+    link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
   }
 
+  async function exportReport() {
+    if (!reportRequest || !natalCalculation || isCalculating) return;
+    const sequence = ++calculationSequence.current;
+    setIsCalculating(true);
+    setErrors([]);
+    try {
+      const sections: string[] = [];
+      for (let year = reportRequest.yearFrom; year <= reportRequest.yearTo; year += 1) {
+        const response = await sendWorkerRequest("computeYear", reportRequest, year);
+        if (!response.success) throw new Error(response.error);
+        if (response.operation !== "computeYear") throw new Error("Unexpected annual calculation response.");
+        const annual = response.result;
+        const fortune = buildYearlyFortune(natalCalculation, annual);
+        sections.push(
+          "",
+          `# ${year} 年流年（${toTW(annual.heavenlyStem)}${toTW(annual.earthlyBranch)}）`,
+          "",
+          ...annual.transformations.map(({ type, star }) => `- 化${toTW(type)}：${toTW(star)}`),
+          "",
+          ...fortuneToMarkdown(fortune, year, reportRequest.detailLevel),
+        );
+      }
+      const markdown = [
+        "# 流年運程報告",
+        "",
+        "> 本檔案含命盤結構與流年運程解讀，屬傳統命理的文化參考，非個人預言，也不構成醫療、財務或人生決策建議。出生資料只在本機計算。",
+        "",
+        `- 出生日期：${reportRequest.birthDate}`,
+        `- 出生時間：${reportRequest.birthTime}`,
+        `- 性別：${reportRequest.gender === "male" ? "男" : reportRequest.gender === "female" ? "女" : "不指定"}`,
+        `- 出生地：${reportRequest.city}`,
+        `- 流年範圍：${reportRequest.yearFrom}–${reportRequest.yearTo}`,
+        `- 解讀深度：${detailLabels[reportRequest.detailLevel]}`,
+        `- 排盤日期：${natalCalculation.chartDate}${natalCalculation.lateZishiAdjusted ? "（晚子時按次日換日）" : ""}`,
+        `- 時辰：${natalCalculation.hourBranchName}時`,
+        `- 真太陽時校正：未套用`,
+        "",
+        "## 本命盤十二宮",
+        "",
+        ...natalCalculation.chart.palaces.map((palace) => {
+          const branch = HOUR_BRANCHES[palace.branch] ?? "—";
+          const stars = palace.stars.map((star) => toTW(star.name)).join("、") || "無主星";
+          return `- ${toTW(palace.name)}（${branch}）：${stars}`;
+        }),
+        ...sections,
+      ].join("\n");
+      if (sequence === calculationSequence.current) {
+        saveMarkdown(markdown, `annual-fortune-${reportRequest.yearFrom}-${reportRequest.yearTo}.md`);
+      }
+    } catch (error) {
+      if (sequence === calculationSequence.current) {
+        setErrors([`無法匯出報告：${error instanceof Error ? error.message : "未知錯誤"}`]);
+      }
+    } finally {
+      if (sequence === calculationSequence.current) setIsCalculating(false);
+    }
+  }
   async function installApp() {
     if (!installPrompt) return;
     await installPrompt.prompt();
@@ -488,7 +526,7 @@ function App() {
             <div>
               <div className="eyebrow">YOUR YEAR, IN PERSPECTIVE</div>
               <h1>建立流年報告</h1>
-              <p>輸入出生資料與報告範圍，開始整理你的年度命盤。</p>
+              <p>輸入出生資料與報告範圍，查看你的流年運程與命盤。</p>
             </div>
             <div className="year-stamp"><span>流年</span><strong>{YEAR}</strong></div>
           </section>
@@ -572,13 +610,13 @@ function App() {
                 <label className="field detail-field">
                   <span>解讀深度</span>
                   <select value={request.detailLevel} onChange={(event) => update("detailLevel", event.target.value as DetailLevel)}>
-                    <option value="summary">精簡 — 年度重點</option>
-                    <option value="standard">標準 — 完整年度概覽</option>
-                    <option value="deep">深入 — 詳細分項解讀</option>
+                    <option value="summary">精簡 — 年度總覽與四化</option>
+                    <option value="standard">標準 — 年度概覽與各領域運程</option>
+                    <option value="deep">深入 — 再加逐月運程</option>
                   </select>
                 </label>
               </div>
-              <div className="school-note"><BookOpen size={16} /><span>計算設定：<strong>《紫微斗數全書》</strong><small>使用參考引擎的固定預設；本階段只提供排盤結構，不提供斷語。</small></span></div>
+              <div className="school-note"><BookOpen size={16} /><span>計算設定：<strong>《紫微斗數全書》</strong><small>使用參考引擎的固定預設；運程解讀依流年四化與宮位規則於本機組成。</small></span></div>
             </section>
 
             {isCalculating && <div className="notice" role="status">正在此裝置計算命盤與流年資料…</div>}
@@ -596,17 +634,17 @@ function App() {
           {reportRequest && natalCalculation && (
             <section className="result-card" aria-live="polite">
               <div className="result-topline"><span className="result-kicker">LOCAL CHART CALCULATION</span><span className="pending-pill">本機完成</span></div>
-              <h2>命盤結構已計算</h2>
+              <h2>命盤與流年運程</h2>
               <p className="result-intro">
-                顯示的是排盤結構，不是運勢解讀。此結果採出生地鐘錶時間，尚未校正夏令時或真太陽時。
+                下方先以白話整理所選流年的運程（依流年四化與本命宮位推演），再附上本命宮位星曜的古籍與開源資料參考（涵蓋不完整，缺漏處不予補寫）。內容為傳統命理的文化參考，並非個人預言。此結果採出生地鐘錶時間，尚未校正夏令時或真太陽時。
               </p>
               <div className="request-summary">
                 <span><CalendarDays size={16} />{reportRequest.yearFrom}{reportRequest.yearTo !== reportRequest.yearFrom && `–${reportRequest.yearTo}`} 年</span>
-                <span><FileText size={16} />{natalCalculation.chart.wuxingJuName}</span>
+                <span><FileText size={16} />{toTW(natalCalculation.chart.wuxingJuName)}</span>
                 <span><UserRound size={16} />{reportRequest.city}</span>
                 <span>命宮：{HOUR_BRANCHES[natalCalculation.chart.mingGongBranch] ?? "—"}</span>
                 <span>身宮：{HOUR_BRANCHES[natalCalculation.chart.shenGongBranch] ?? "—"}</span>
-                <span>命主：{natalCalculation.chart.mingZhu ?? "—"} / 身主：{natalCalculation.chart.shenZhu ?? "—"}</span>
+                <span>命主：{toTW(natalCalculation.chart.mingZhu ?? "—")} / 身主：{toTW(natalCalculation.chart.shenZhu ?? "—")}</span>
               </div>
 
               <div className="annual-section">
@@ -619,7 +657,7 @@ function App() {
                   >
                     上一年
                   </button>
-                  <h3>{selectedYear} 年流年{annualCalculation && `・${annualCalculation.heavenlyStem}${annualCalculation.earthlyBranch}`}</h3>
+                  <h3>{selectedYear} 年流年{annualCalculation && `・${toTW(annualCalculation.heavenlyStem)}${toTW(annualCalculation.earthlyBranch)}`}</h3>
                   <button
                     type="button"
                     className="secondary-button year-button"
@@ -633,43 +671,119 @@ function App() {
                   <>
                     <div className="transformation-list" aria-label="流年四化">
                       {annualCalculation.transformations.map(({ type, star }) => (
-                        <span key={type}>化{type}・{star}</span>
+                        <span key={type}>化{toTW(type)}・{toTW(star)}</span>
                       ))}
                     </div>
+                    {yearlyFortune && (
+                      <div className="fortune-section">
+                        <h3>{selectedYear} 年運程解讀</h3>
+                        <p className="fortune-overview">{yearlyFortune.overview}</p>
+                        {yearlyFortune.transformations.length > 0 && (
+                          <>
+                            <h4>今年的關鍵引動（流年四化）</h4>
+                            <div className="fortune-grid">
+                              {yearlyFortune.transformations.map((item) => (
+                                <article className="fortune-card" key={item.title}>
+                                  <strong>{item.title}</strong>
+                                  <p>{item.text}</p>
+                                </article>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {reportRequest.detailLevel !== "summary" && (
+                          <>
+                            <h4>各領域運程</h4>
+                            <div className="fortune-grid">
+                              {yearlyFortune.areas.map((item) => (
+                                <article className={`fortune-card tone-${item.tone}`} key={item.area}>
+                                  <div className="fortune-card-heading">
+                                    <strong>{item.label}</strong>
+                                    <span className="tone-pill">{item.toneLabel}</span>
+                                  </div>
+                                  <p>{item.text}</p>
+                                </article>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        {reportRequest.detailLevel === "deep" && (
+                          <>
+                            <h4>逐月運程（農曆）</h4>
+                            <div className="fortune-grid">
+                              {yearlyFortune.months.map((item) => (
+                                <article className={`fortune-card tone-${item.tone}`} key={item.title}>
+                                  <div className="fortune-card-heading">
+                                    <strong>{item.title}</strong>
+                                    <span className="tone-pill">{item.toneLabel}</span>
+                                  </div>
+                                  <small className="solar-range">{item.solarRange}</small>
+                                  <p>{item.text}</p>
+                                </article>
+                              ))}
+                            </div>
+                          </>
+                        )}
+                        <small>
+                          運程解讀由本機依「流年四化落入哪一宮」與本命宮位星曜特質規則組成，屬傳統命理的文化參考，非個人預言，也不構成醫療、財務或人生決策建議。
+                        </small>
+                      </div>
+                    )}
                     <div className="palace-grid">
                       {natalCalculation.chart.palaces.map((palace) => {
-                        const annualPalace = annualCalculation.palaceNames[palace.branch] ?? "—";
-                        const annualStars = annualCalculation.annualStars[palace.branch] ?? [];
+                        const annualPalace = normalizePalaceName(annualCalculation.palaceNames[palace.branch] ?? "—");
+                        const annualStars = (annualCalculation.annualStars[palace.branch] ?? []).map(toTW);
                         return (
                           <article className="palace-tile" key={palace.branch}>
                             <div className="palace-tile-heading">
-                              <strong>{palace.name}</strong>
+                              <strong>{toTW(palace.name)}</strong>
                               <span>{HOUR_BRANCHES[palace.branch] ?? "—"}</span>
                             </div>
                             <small>流年：{annualPalace}</small>
-                            <p>{palace.stars.map((star) => star.name).join("、") || "無主星"}</p>
+                            <p>{palace.stars.map((star) => toTW(star.name)).join("、") || "無主星"}</p>
                             {annualStars.length > 0 && <small>流曜：{annualStars.join("、")}</small>}
                           </article>
                         );
                       })}
                     </div>
                     <p className="deity-summary">
-                      流年神煞：歲前 {annualCalculation.annualDeities.suiqian12.join("、")}；
-                      將前 {annualCalculation.annualDeities.jiangqian12.join("、")}
+                      流年神煞：歲前 {annualCalculation.annualDeities.suiqian12.map(toTW).join("、")}；
+                      將前 {annualCalculation.annualDeities.jiangqian12.map(toTW).join("、")}
                     </p>
                   </>
                 ) : (
                   <p className="result-intro" role="status">正在計算所選年份的流年資料…</p>
                 )}
               </div>
-              <button
-                type="button"
-                className="secondary-button export-button"
-                onClick={downloadRequest}
-                disabled={!annualCalculation}
-              >
-                <ArrowDownToLine size={16} />匯出命盤摘要（Markdown）
-              </button>
+              <details className="interpretation-section">
+                <summary><h3>本命宮位星曜參考（古籍與開源資料，涵蓋不完整）</h3></summary>
+                {natalCalculation.chart.palaces.map((palace) => {
+                  const simplifiedName = palace.name.replace(/宮$|宫$/, "");
+                  const majors = palace.stars.filter((star) => star.type === "major");
+                  const items = majors.flatMap((star) =>
+                    (INTERPRETATIONS.palaces[simplifiedName]?.[star.name] ?? []).map((entry) => ({ star: star.name, entry })),
+                  );
+                  return (
+                    <article className="interpretation-item" key={palace.branch}>
+                      <strong>{normalizePalaceName(palace.name)}宮：{majors.map((star) => toTW(star.name)).join("、") || "無主星"}</strong>
+                      {items.length === 0
+                        ? <p className="result-intro">此宮位暫無可用解讀。</p>
+                        : items.map(({ star, entry }) => (
+                            <p key={`${star}-${entry.dimension}`}>{toTW(star)}：{proseToTW(entry.standard ?? entry.summary ?? "")}</p>
+                          ))}
+                    </article>
+                  );
+                })}
+                <small>{proseToTW(INTERPRETATIONS.attribution.join(" "))}</small>
+              </details>
+              <div className="export-actions">
+                <button type="button" className="secondary-button export-button" onClick={() => void exportReport()} disabled={isCalculating}>
+                  <ArrowDownToLine size={16} />匯出完整報告（Markdown，{reportRequest.yearFrom}–{reportRequest.yearTo} 年）
+                </button>
+                <button type="button" className="secondary-button export-button" onClick={() => window.print()}>
+                  <FileText size={16} />列印／存成 PDF
+                </button>
+              </div>
             </section>
           )}
 

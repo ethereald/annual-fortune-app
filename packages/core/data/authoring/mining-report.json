@@ -1,0 +1,306 @@
+{
+  "file": "year-1990.jsonl.zst",
+  "sha256": "d89f446543a2f542c03b8df2e81cfc48cf422b7968bf833d6ceeebfd3f94f4da",
+  "charts": 8760,
+  "droppedExcludedLeads": 0,
+  "droppedClassicsExcluded": 726,
+  "interpretationKeys": [
+    "career/官禄宫/天同",
+    "career/官禄宫/天府",
+    "career/官禄宫/太阴",
+    "children/子女宫/天府",
+    "children/子女宫/天相",
+    "children/子女宫/太阴",
+    "children/子女宫/紫微",
+    "children/子女宫/贪狼",
+    "family/兄弟宫/天府",
+    "family/兄弟宫/紫微",
+    "friends/交友宫/七杀",
+    "friends/交友宫/天同",
+    "friends/交友宫/天府",
+    "friends/交友宫/天机",
+    "friends/交友宫/天梁",
+    "friends/交友宫/天相",
+    "friends/交友宫/太阳",
+    "friends/交友宫/太阴",
+    "friends/交友宫/破军",
+    "friends/交友宫/贪狼",
+    "health/疾厄宫/天同",
+    "health/疾厄宫/天机",
+    "health/疾厄宫/天梁",
+    "health/疾厄宫/天相",
+    "health/疾厄宫/太阳",
+    "health/疾厄宫/太阴",
+    "health/疾厄宫/巨门",
+    "health/疾厄宫/廉贞",
+    "health/疾厄宫/武曲",
+    "health/疾厄宫/紫微",
+    "health/疾厄宫/贪狼",
+    "home/田宅宫/七杀",
+    "home/田宅宫/天府",
+    "home/田宅宫/天机",
+    "home/田宅宫/天梁",
+    "home/田宅宫/天相",
+    "home/田宅宫/太阳",
+    "home/田宅宫/太阴",
+    "home/田宅宫/破军",
+    "home/田宅宫/紫微",
+    "home/田宅宫/贪狼",
+    "love/夫妻宫/七杀",
+    "love/夫妻宫/天同",
+    "love/夫妻宫/天府",
+    "love/夫妻宫/天机",
+    "love/夫妻宫/天梁",
+    "love/夫妻宫/天相",
+    "love/夫妻宫/太阳",
+    "love/夫妻宫/太阴",
+    "love/夫妻宫/紫微",
+    "move/迁移宫/天同",
+    "move/迁移宫/天府",
+    "move/迁移宫/天机",
+    "move/迁移宫/天梁",
+    "move/迁移宫/太阳",
+    "move/迁移宫/破军",
+    "move/迁移宫/贪狼",
+    "parents/父母宫/七杀",
+    "parents/父母宫/天同",
+    "parents/父母宫/天府",
+    "parents/父母宫/天机",
+    "parents/父母宫/天梁",
+    "parents/父母宫/天相",
+    "parents/父母宫/太阴",
+    "parents/父母宫/紫微",
+    "parents/父母宫/贪狼",
+    "personality/命宫/天府",
+    "personality/命宫/天相",
+    "personality/命宫/太阳",
+    "spirit/福德宫/七杀",
+    "spirit/福德宫/天府",
+    "spirit/福德宫/天机",
+    "spirit/福德宫/天梁",
+    "spirit/福德宫/天相",
+    "spirit/福德宫/太阴",
+    "spirit/福德宫/破军",
+    "spirit/福德宫/贪狼",
+    "wealth/财帛宫/天同",
+    "wealth/财帛宫/天府",
+    "wealth/财帛宫/天机",
+    "wealth/财帛宫/天梁",
+    "wealth/财帛宫/天相",
+    "wealth/财帛宫/太阴",
+    "wealth/财帛宫/贪狼"
+  ],
+  "skipped": [
+    {
+      "key": "career/官禄宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/天机",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/天梁",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "career/官禄宫/天相",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/武曲",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/紫微",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "career/官禄宫/贪狼",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "children/子女宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "children/子女宫/天同",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "children/子女宫/天机",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "children/子女宫/天梁",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "children/子女宫/太阳",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "children/子女宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "health/疾厄宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "health/疾厄宫/天府",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "health/疾厄宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "home/田宅宫/天同",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "love/夫妻宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "love/夫妻宫/贪狼",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "move/迁移宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "move/迁移宫/天相",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "move/迁移宫/太阴",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "move/迁移宫/紫微",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "parents/父母宫/太阳",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "parents/父母宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "personality/命宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "personality/命宫/天同",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "personality/命宫/天梁",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "personality/命宫/太阴",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "personality/命宫/廉贞",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "personality/命宫/武曲",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "personality/命宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "spirit/福德宫/太阳",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "spirit/福德宫/紫微",
+      "reason": "ambiguous lead text across charts"
+    },
+    {
+      "key": "wealth/财帛宫/七杀",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "wealth/财帛宫/太阳",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "wealth/财帛宫/破军",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    },
+    {
+      "key": "wealth/财帛宫/紫微",
+      "reason": "lead paragraph contains excluded 倪师 material"
+    }
+  ],
+  "classics": {
+    "accepted": 222,
+    "ambiguous": [
+      "卷一·斗数骨髓赋",
+      "卷一·诸星问答论·天同",
+      "卷一·诸星问答论·天机",
+      "卷一·诸星问答论·天相",
+      "卷一·诸星问答论·太阳",
+      "卷一·诸星问答论·破军",
+      "卷一·诸星问答论·紫微",
+      "卷一·问天梁星所主若何",
+      "卷一·问天梁星所主若何？",
+      "卷一·问巨门所主若何？",
+      "卷一·问廉贞所主若何",
+      "卷一·问破军所主若何？",
+      "卷一·问紫微所主若何？",
+      "卷一·问贪狼所主若何",
+      "卷三·论诸星同垣",
+      "卷三·论诸星同垣各司所宜分别富贵贫贱夭寿",
+      "卷二·一 命宫",
+      "卷二·三妻妾",
+      "卷二·九官禄",
+      "卷二·二兄弟",
+      "卷二·五财帛",
+      "卷二·五财帛·天机条",
+      "卷二·五财帛·武曲条",
+      "卷二·五财帛·紫微条",
+      "卷二·八奴仆",
+      "卷二·六疾厄",
+      "卷二·命宫",
+      "卷二·命宫·化忌条",
+      "卷二·命宫·化权条",
+      "卷二·命宫·化禄条",
+      "卷二·命宫·化科条",
+      "卷二·命宫·天机条",
+      "卷二·命宫·天梁条",
+      "卷二·命宫·太阴条",
+      "卷二·命宫·巨门条",
+      "卷二·命宫·武曲条",
+      "卷二·命宫·破军条",
+      "卷二·命宫·贪狼条",
+      "卷二·夫妻·太阴条",
+      "卷二·妻妾",
+      "卷二·子女·天府条",
+      "卷二·官禄",
+      "卷二·官禄·太阳条",
+      "卷二·父母·太阴条",
+      "卷二·田宅·天相条",
+      "卷二·福德·七杀条",
+      "卷二·财帛",
+      "卷二·财帛·七杀条",
+      "卷二·财帛·天府条",
+      "卷二·财帛·太阳条"
+    ]
+  }
+}

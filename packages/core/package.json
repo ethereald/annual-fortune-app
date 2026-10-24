@@ -21,7 +21,11 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run"
+    "test": "vitest run && node --test tools/snippets.test.mjs tools/mine-dataset.test.mjs",
+    "snippets:mine": "node tools/mine-dataset.mjs",
+    "snippets:build": "node tools/build-snippets.mjs",
+    "snippets:export-web": "node tools/export-web-interpretations.mjs",
+    "snippets:coverage": "node tools/check-snippet-coverage.mjs"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
