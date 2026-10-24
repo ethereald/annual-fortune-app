@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json && vite build",
-    "build:single": "tsc -p tsconfig.json && vite build --mode single",
+    "build": "npm run build --workspace @annual-fortune/core && tsc -p tsconfig.json && vite build",
+    "build:single": "npm run build --workspace @annual-fortune/core && tsc -p tsconfig.json && vite build --mode single",
     "preview": "vite preview"
   },
   "dependencies": {
