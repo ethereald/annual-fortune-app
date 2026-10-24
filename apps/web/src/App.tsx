@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -10,6 +10,7 @@ import {
   CloudOff,
   FileJson,
   FileText,
+  Upload,
   LayoutDashboard,
   Moon,
   Pencil,
@@ -119,6 +120,7 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileProfiles, setShowMobileProfiles] = useState(false);
   const workerRef = useRef<Worker | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
   const pendingWorkerCalls = useRef(new Map<number, PendingWorkerCall>());
   const nextWorkerCallId = useRef(1);
   const calculationSequence = useRef(0);
@@ -295,6 +297,35 @@ function App() {
     setProfiles((current) => [profile, ...current]);
     setActiveProfileId(profile.id);
     setNotice("資料已保存在此裝置。");
+  }
+
+  async function importProfiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.target.files ?? []);
+    event.target.value = "";
+    if (files.length === 0) return;
+    const imported: SavedProfile[] = [];
+    let failed = 0;
+    for (const file of files) {
+      try {
+        if (file.size > 100_000) throw new RangeError("File too large.");
+        const parsed: unknown = JSON.parse(await file.text());
+        const record = typeof parsed === "object" && parsed !== null ? (parsed as Record<string, unknown>) : null;
+        if (!record || record.format !== "annual-fortune-profile" || record.version !== 1) throw new TypeError("Unsupported file.");
+        const candidate = { ...(record.profile as Record<string, unknown>), id: crypto.randomUUID() };
+        if (!isSavedProfile(candidate) || candidate.name.trim() === "" || validateFortuneRequest(candidate).length > 0) {
+          throw new TypeError("Invalid profile.");
+        }
+        imported.push({ ...candidate, name: candidate.name.trim() });
+      } catch {
+        failed += 1;
+      }
+    }
+    if (imported.length > 0) setProfiles((current) => [...imported, ...current]);
+    setNotice(
+      imported.length > 0
+        ? `已匯入 ${imported.length} 份命盤${failed > 0 ? `，${failed} 個檔案無法讀取` : ""}。`
+        : "匯入失敗：檔案不是有效的命盤 JSON。",
+    );
   }
 
   function renameProfile(profile: SavedProfile) {
@@ -500,6 +531,7 @@ function App() {
 
   return (
     <div className="app-shell">
+      <input ref={importInputRef} type="file" accept="application/json,.json" multiple hidden onChange={(event) => void importProfiles(event)} />
       <aside className="sidebar">
         <a className="brand" href="#" aria-label="流年首頁">
           <span className="brand-mark">流</span>
@@ -510,6 +542,9 @@ function App() {
         <div className="side-heading">
           <span className="side-label">本機命盤</span>
           <span className="count">{profiles.length}</span>
+          <button type="button" className="profile-action" aria-label="匯入命盤 JSON" title="匯入 JSON" onClick={() => importInputRef.current?.click()}>
+            <Upload size={14} />
+          </button>
         </div>
         <div className="profile-list">
           {profiles.length === 0 ? (
@@ -838,7 +873,7 @@ function App() {
         {showMobileProfiles && (
           <div className="sheet-backdrop" onClick={() => setShowMobileProfiles(false)}>
             <section className="mobile-profile-sheet" aria-label="本機命盤" onClick={(event) => event.stopPropagation()}>
-              <div className="sheet-heading"><h2>本機命盤</h2><button className="sheet-close" onClick={() => setShowMobileProfiles(false)}>關閉</button></div>
+              <div className="sheet-heading"><h2>本機命盤</h2><button className="sheet-close" onClick={() => importInputRef.current?.click()}>匯入 JSON</button><button className="sheet-close" onClick={() => setShowMobileProfiles(false)}>關閉</button></div>
               {profiles.length === 0
                 ? <p className="empty-profiles">尚未儲存命盤。填寫資料後，點選「儲存命盤」。</p>
                 : profiles.map(renderProfileRow)}
