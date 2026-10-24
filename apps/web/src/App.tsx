@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   ArrowDownToLine,
   ArrowRight,
@@ -20,15 +20,28 @@ import {
   Wifi,
 } from "lucide-react";
 import {
+  type AnnualCalculation,
   type DetailLevel,
   type FortuneRequest,
+  type FortuneWorkerRequest,
+  type FortuneWorkerResponse,
   type Gender,
+  type NatalCalculation,
   type SavedProfile,
-  validateFortuneRequest,
 } from "@annual-fortune/core";
+import {
+  HOUR_BRANCHES,
+  validateFortuneRequest,
+} from "@annual-fortune/core/validation";
+import thirdPartyLicenses from "./third-party-licenses.txt?raw";
 
 const STORAGE_KEY = "annual-fortune.profiles.v1";
 const YEAR = new Date().getFullYear();
+
+interface PendingWorkerCall {
+  resolve: (response: FortuneWorkerResponse) => void;
+  reject: (error: Error) => void;
+}
 
 const initialRequest: FortuneRequest = {
   birthDate: "",
@@ -87,8 +100,17 @@ function App() {
   const [isDark, setIsDark] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [reportRequest, setReportRequest] = useState<FortuneRequest | null>(null);
+  const [natalCalculation, setNatalCalculation] = useState<NatalCalculation | null>(null);
+  const [annualCalculation, setAnnualCalculation] = useState<AnnualCalculation | null>(null);
+  const [selectedYear, setSelectedYear] = useState(YEAR);
+  const [isCalculating, setIsCalculating] = useState(false);
+  const [workerStatus, setWorkerStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [showSettings, setShowSettings] = useState(false);
   const [showMobileProfiles, setShowMobileProfiles] = useState(false);
+  const workerRef = useRef<Worker | null>(null);
+  const pendingWorkerCalls = useRef(new Map<number, PendingWorkerCall>());
+  const nextWorkerCallId = useRef(1);
+  const calculationSequence = useRef(0);
   const range = useMemo(
     () => Math.max(1, request.yearTo - request.yearFrom + 1),
     [request.yearFrom, request.yearTo],
@@ -97,6 +119,69 @@ function App() {
   useEffect(() => {
     document.documentElement.dataset.theme = isDark ? "dark" : "light";
   }, [isDark]);
+
+  useEffect(() => {
+    let worker: Worker | null = null;
+    let isDisposed = false;
+    const rejectPendingCalls = (error: Error) => {
+      for (const pending of pendingWorkerCalls.current.values()) pending.reject(error);
+      pendingWorkerCalls.current.clear();
+    };
+    const attachWorker = (instance: Worker) => {
+      if (isDisposed) {
+        instance.terminate();
+        return;
+      }
+      worker = instance;
+      workerRef.current = instance;
+      instance.onmessage = (event: MessageEvent<FortuneWorkerResponse>) => {
+        const pending = pendingWorkerCalls.current.get(event.data.id);
+        if (!pending) return;
+        pendingWorkerCalls.current.delete(event.data.id);
+        pending.resolve(event.data);
+      };
+      instance.onerror = (event) => {
+        const error = new Error(event.message || "Chart worker failed.");
+        rejectPendingCalls(error);
+        workerRef.current = null;
+        setWorkerStatus("failed");
+        setErrors([`本機計算工作執行失敗：${error.message}`]);
+      };
+      instance.onmessageerror = () => {
+        const error = new Error("Chart worker returned unreadable data.");
+        rejectPendingCalls(error);
+        workerRef.current = null;
+        setWorkerStatus("failed");
+        setErrors([`本機計算工作執行失敗：${error.message}`]);
+      };
+      setWorkerStatus("ready");
+    };
+
+    async function startWorker() {
+      if (import.meta.env.MODE === "single") {
+        const { default: InlineWorker } = await import("./fortune.worker.ts?worker&inline");
+        attachWorker(new InlineWorker());
+      } else {
+        const { default: ExternalWorker } = await import("./fortune.worker.ts?worker");
+        attachWorker(new ExternalWorker());
+      }
+    }
+
+    void startWorker().catch((error: unknown) => {
+      if (!isDisposed) {
+        setWorkerStatus("failed");
+        setErrors([`無法啟動本機計算引擎：${error instanceof Error ? error.message : "未知錯誤"}`]);
+      }
+    });
+
+    return () => {
+      isDisposed = true;
+      calculationSequence.current += 1;
+      worker?.terminate();
+      workerRef.current = null;
+      rejectPendingCalls(new Error("Chart worker stopped."));
+    };
+  }, []);
 
   useEffect(() => {
     const updateOnline = () => setIsOnline(navigator.onLine);
@@ -126,9 +211,51 @@ function App() {
   }, [profiles]);
 
   function update<K extends keyof FortuneRequest>(key: K, value: FortuneRequest[K]) {
+    calculationSequence.current += 1;
     setRequest((current) => ({ ...current, [key]: value }));
     setErrors([]);
     setNotice("");
+    setReportRequest(null);
+    setNatalCalculation(null);
+    setAnnualCalculation(null);
+    setIsCalculating(false);
+  }
+
+  function sendWorkerRequest(
+    operation: "computeNatal",
+    request: FortuneRequest,
+  ): Promise<FortuneWorkerResponse>;
+  function sendWorkerRequest(
+    operation: "computeYear",
+    request: FortuneRequest,
+    year: number,
+  ): Promise<FortuneWorkerResponse>;
+  function sendWorkerRequest(
+    operation: "computeNatal" | "computeYear",
+    request: FortuneRequest,
+    year?: number,
+  ): Promise<FortuneWorkerResponse> {
+    const worker = workerRef.current;
+    if (!worker) return Promise.reject(new Error("The local chart worker is not available."));
+
+    const id = nextWorkerCallId.current++;
+    let message: FortuneWorkerRequest;
+    if (operation === "computeNatal") {
+      message = { id, operation, request };
+    } else {
+      if (year === undefined) return Promise.reject(new Error("A year is required for annual calculation."));
+      message = { id, operation, request, year };
+    }
+
+    return new Promise((resolve, reject) => {
+      pendingWorkerCalls.current.set(id, { resolve, reject });
+      try {
+        worker.postMessage(message);
+      } catch (error) {
+        pendingWorkerCalls.current.delete(id);
+        reject(error instanceof Error ? error : new Error("Could not send the calculation request."));
+      }
+    });
   }
 
   function saveProfile() {
@@ -156,10 +283,14 @@ function App() {
   }
 
   function loadProfile(profile: SavedProfile) {
+    calculationSequence.current += 1;
     const { id, name: _name, createdAt: _createdAt, ...savedRequest } = profile;
     setRequest(savedRequest);
     setActiveProfileId(id);
     setReportRequest(null);
+    setNatalCalculation(null);
+    setAnnualCalculation(null);
+    setIsCalculating(false);
     setErrors([]);
     setShowMobileProfiles(false);
     setNotice(`${profile.name} 已載入。`);
@@ -172,21 +303,78 @@ function App() {
     setNotice("已刪除此裝置上的所有命盤資料。");
   }
 
-  function generateReport(event: FormEvent<HTMLFormElement>) {
+  async function generateReport(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const validationErrors = validateFortuneRequest(request);
+    if (request.gender === "unspecified") {
+      validationErrors.push("請選擇性別，以計算依性別順逆排定的大限。");
+    }
     setErrors(validationErrors);
     if (validationErrors.length) return;
-    setReportRequest({ ...request });
+
+    const sequence = ++calculationSequence.current;
+    setIsCalculating(true);
     setNotice("");
+    setReportRequest(null);
+    setNatalCalculation(null);
+    setAnnualCalculation(null);
+    try {
+      const natalResponse = await sendWorkerRequest("computeNatal", request);
+      if (!natalResponse.success) throw new Error(natalResponse.error);
+      if (natalResponse.operation !== "computeNatal") throw new Error("Unexpected natal calculation response.");
+
+      const annualResponse = await sendWorkerRequest("computeYear", request, request.yearFrom);
+      if (!annualResponse.success) throw new Error(annualResponse.error);
+      if (annualResponse.operation !== "computeYear") throw new Error("Unexpected annual calculation response.");
+      if (sequence !== calculationSequence.current) return;
+
+      setNatalCalculation(natalResponse.result);
+      setAnnualCalculation(annualResponse.result);
+      setSelectedYear(request.yearFrom);
+      setReportRequest({ ...request });
+    } catch (error) {
+      if (sequence === calculationSequence.current) {
+        setErrors([`無法計算命盤：${error instanceof Error ? error.message : "未知錯誤"}`]);
+      }
+    } finally {
+      if (sequence === calculationSequence.current) setIsCalculating(false);
+    }
+  }
+
+  async function selectYear(year: number) {
+    if (!reportRequest || isCalculating || year < reportRequest.yearFrom || year > reportRequest.yearTo) return;
+    if (year === selectedYear) return;
+
+    const sequence = ++calculationSequence.current;
+    const previousYear = selectedYear;
+    const previousAnnual = annualCalculation;
+    setSelectedYear(year);
+    setAnnualCalculation(null);
+    setIsCalculating(true);
+    setErrors([]);
+    try {
+      const response = await sendWorkerRequest("computeYear", reportRequest, year);
+      if (!response.success) throw new Error(response.error);
+      if (response.operation !== "computeYear") throw new Error("Unexpected annual calculation response.");
+      if (sequence !== calculationSequence.current) return;
+      setAnnualCalculation(response.result);
+    } catch (error) {
+      if (sequence === calculationSequence.current) {
+        setSelectedYear(previousYear);
+        setAnnualCalculation(previousAnnual);
+        setErrors([`無法計算流年：${error instanceof Error ? error.message : "未知錯誤"}`]);
+      }
+    } finally {
+      if (sequence === calculationSequence.current) setIsCalculating(false);
+    }
   }
 
   function downloadRequest() {
-    if (!reportRequest) return;
+    if (!reportRequest || !natalCalculation || !annualCalculation) return;
     const markdown = [
-      "# 流年報告請求",
+      "# 流年命盤計算摘要",
       "",
-      "> 此檔案記錄報告設定，不是命理分析。計算引擎與經授權的解讀資料尚未接入。",
+      "> 本檔案包含命盤結構資料，不含運勢斷語或解讀。出生資料只在本機計算。",
       "",
       `- 出生日期：${reportRequest.birthDate}`,
       `- 出生時間：${reportRequest.birthTime}`,
@@ -195,16 +383,30 @@ function App() {
       `- 流年範圍：${reportRequest.yearFrom}–${reportRequest.yearTo}`,
       `- 詳細程度：${detailLabels[reportRequest.detailLevel]}`,
       `- 流派設定：紫微斗數全書`,
+      `- 排盤日期：${natalCalculation.chartDate}${natalCalculation.lateZishiAdjusted ? "（晚子時按次日換日）" : ""}`,
+      `- 時辰：${natalCalculation.hourBranchName}時`,
+      `- 真太陽時校正：未套用（尚無城市座標資料）`,
       "",
-      "## 隱私",
+      "## 本命盤十二宮",
       "",
-      "此檔案由本機產生。出生資料不會傳送至伺服器。",
+      ...natalCalculation.chart.palaces.map((palace) => {
+        const branch = HOUR_BRANCHES[palace.branch] ?? "—";
+        const stars = palace.stars.map((star) => star.name).join("、") || "無主星";
+        return `- ${palace.name}（${branch}）：${stars}`;
+      }),
+      "",
+      `## ${annualCalculation.year} 年流年`,
+      "",
+      `- 流年干支：${annualCalculation.heavenlyStem}${annualCalculation.earthlyBranch}`,
+      ...annualCalculation.transformations.map(({ type, star }) => `- 化${type}：${star}`),
+      "",
+      "本機使用紫微斗數排盤引擎；計算結果不包含經授權的解讀內容。",
     ].join("\n");
     const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `annual-fortune-request-${reportRequest.yearFrom}-${reportRequest.yearTo}.md`;
+    link.download = `annual-fortune-${annualCalculation.year}.md`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -324,7 +526,7 @@ function App() {
                 <label className="field">
                   <span>出生城市或地區 <b>*</b></span>
                   <input type="text" placeholder="例如：台北市" value={request.city} onChange={(event) => update("city", event.target.value)} required />
-                  <small>供真太陽時校正使用，城市搜尋稍後接入</small>
+                  <small>目前用於記錄出生地；城市座標與真太陽時校正尚未接入</small>
                 </label>
               </div>
             </section>
@@ -342,7 +544,13 @@ function App() {
                     key={years}
                     onClick={(event) => {
                       event.preventDefault();
+                      calculationSequence.current += 1;
                       setRequest((current) => ({ ...current, yearFrom: YEAR, yearTo: YEAR + years - 1 }));
+                      setReportRequest(null);
+                      setNatalCalculation(null);
+                      setAnnualCalculation(null);
+                      setIsCalculating(false);
+                      setErrors([]);
                     }}
                     type="button"
                   >
@@ -370,28 +578,98 @@ function App() {
                   </select>
                 </label>
               </div>
-              <div className="school-note"><BookOpen size={16} /><span>計算設定：<strong>《紫微斗數全書》</strong><small>目前固定此設定，以確保解讀資料一致。</small></span></div>
+              <div className="school-note"><BookOpen size={16} /><span>計算設定：<strong>《紫微斗數全書》</strong><small>使用參考引擎的固定預設；本階段只提供排盤結構，不提供斷語。</small></span></div>
             </section>
 
+            {isCalculating && <div className="notice" role="status">正在此裝置計算命盤與流年資料…</div>}
             {errors.length > 0 && <div className="error-box" role="alert">{errors.map((error) => <p key={error}>{error}</p>)}</div>}
 
             <div className="form-actions">
               <button type="button" className="secondary-button" onClick={saveProfile}><Plus size={17} />儲存命盤</button>
-              <button type="submit" className="primary-button">建立報告請求<ArrowRight size={17} /></button>
+              <button type="submit" className="primary-button" disabled={isCalculating || workerStatus !== "ready"}>
+                {isCalculating ? "計算中…" : workerStatus === "ready" ? "計算命盤" : workerStatus === "failed" ? "引擎無法啟動" : "引擎載入中…"}
+                <ArrowRight size={17} />
+              </button>
             </div>
           </form>
 
-          {reportRequest && (
+          {reportRequest && natalCalculation && (
             <section className="result-card" aria-live="polite">
-              <div className="result-topline"><span className="result-kicker">REPORT WORKSPACE</span><span className="pending-pill">引擎待接入</span></div>
-              <h2>報告設定已準備就緒</h2>
-              <p className="result-intro">目前工作區沒有紫微斗數計算引擎或授權解讀資料，因此不會生成虛構命盤結果。</p>
+              <div className="result-topline"><span className="result-kicker">LOCAL CHART CALCULATION</span><span className="pending-pill">本機完成</span></div>
+              <h2>命盤結構已計算</h2>
+              <p className="result-intro">
+                顯示的是排盤結構，不是運勢解讀。此結果採出生地鐘錶時間，尚未校正夏令時或真太陽時。
+              </p>
               <div className="request-summary">
                 <span><CalendarDays size={16} />{reportRequest.yearFrom}{reportRequest.yearTo !== reportRequest.yearFrom && `–${reportRequest.yearTo}`} 年</span>
-                <span><FileText size={16} />{detailLabels[reportRequest.detailLevel]}解讀</span>
+                <span><FileText size={16} />{natalCalculation.chart.wuxingJuName}</span>
                 <span><UserRound size={16} />{reportRequest.city}</span>
+                <span>命宮：{HOUR_BRANCHES[natalCalculation.chart.mingGongBranch] ?? "—"}</span>
+                <span>身宮：{HOUR_BRANCHES[natalCalculation.chart.shenGongBranch] ?? "—"}</span>
+                <span>命主：{natalCalculation.chart.mingZhu ?? "—"} / 身主：{natalCalculation.chart.shenZhu ?? "—"}</span>
               </div>
-              <button type="button" className="secondary-button export-button" onClick={downloadRequest}><ArrowDownToLine size={16} />匯出設定摘要（Markdown）</button>
+
+              <div className="annual-section">
+                <div className="annual-toolbar">
+                  <button
+                    type="button"
+                    className="secondary-button year-button"
+                    disabled={isCalculating || selectedYear <= reportRequest.yearFrom}
+                    onClick={() => void selectYear(selectedYear - 1)}
+                  >
+                    上一年
+                  </button>
+                  <h3>{selectedYear} 年流年{annualCalculation && `・${annualCalculation.heavenlyStem}${annualCalculation.earthlyBranch}`}</h3>
+                  <button
+                    type="button"
+                    className="secondary-button year-button"
+                    disabled={isCalculating || selectedYear >= reportRequest.yearTo}
+                    onClick={() => void selectYear(selectedYear + 1)}
+                  >
+                    下一年
+                  </button>
+                </div>
+                {annualCalculation ? (
+                  <>
+                    <div className="transformation-list" aria-label="流年四化">
+                      {annualCalculation.transformations.map(({ type, star }) => (
+                        <span key={type}>化{type}・{star}</span>
+                      ))}
+                    </div>
+                    <div className="palace-grid">
+                      {natalCalculation.chart.palaces.map((palace) => {
+                        const annualPalace = annualCalculation.palaceNames[palace.branch] ?? "—";
+                        const annualStars = annualCalculation.annualStars[palace.branch] ?? [];
+                        return (
+                          <article className="palace-tile" key={palace.branch}>
+                            <div className="palace-tile-heading">
+                              <strong>{palace.name}</strong>
+                              <span>{HOUR_BRANCHES[palace.branch] ?? "—"}</span>
+                            </div>
+                            <small>流年：{annualPalace}</small>
+                            <p>{palace.stars.map((star) => star.name).join("、") || "無主星"}</p>
+                            {annualStars.length > 0 && <small>流曜：{annualStars.join("、")}</small>}
+                          </article>
+                        );
+                      })}
+                    </div>
+                    <p className="deity-summary">
+                      流年神煞：歲前 {annualCalculation.annualDeities.suiqian12.join("、")}；
+                      將前 {annualCalculation.annualDeities.jiangqian12.join("、")}
+                    </p>
+                  </>
+                ) : (
+                  <p className="result-intro" role="status">正在計算所選年份的流年資料…</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="secondary-button export-button"
+                onClick={downloadRequest}
+                disabled={!annualCalculation}
+              >
+                <ArrowDownToLine size={16} />匯出命盤摘要（Markdown）
+              </button>
             </section>
           )}
 
@@ -399,6 +677,10 @@ function App() {
             <CircleHelp size={17} />
             <p>本工具提供文化與娛樂用途的參考，不構成醫療、財務或人生決策建議。六親相關內容應審慎看待。</p>
           </div>
+          <details className="license-details">
+            <summary>開源引擎與第三方授權</summary>
+            <pre>{thirdPartyLicenses}</pre>
+          </details>
         </div>
         <nav className="mobile-nav" aria-label="主要導覽">
           <button className="active"><LayoutDashboard size={18} /><span>報告</span></button>

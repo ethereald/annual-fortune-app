@@ -128,9 +128,25 @@ h1, h2, p { margin-top: 0; }
 .request-summary { display: flex; flex-wrap: wrap; gap: 17px; margin: 0 0 19px; color: var(--muted); font-size: 10px; }
 .request-summary span { display: flex; align-items: center; gap: 6px; }
 .export-button { min-height: 34px; font-size: 10px; }
+.primary-button:disabled, .secondary-button:disabled { cursor: not-allowed; opacity: .55; }
+.annual-section { padding-top: 18px; border-top: 1px solid var(--line); margin: 18px 0; }
+.annual-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+.annual-toolbar h3 { margin: 0; font: 500 16px Georgia, serif; text-align: center; }
+.year-button { min-height: 32px; padding: 0 10px; font-size: 10px; }
+.transformation-list { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
+.transformation-list span { border: 1px solid var(--line); border-radius: 20px; padding: 6px 10px; background: var(--green-soft); color: var(--green); font-size: 10px; }
+.palace-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.palace-tile { min-width: 0; padding: 11px; border: 1px solid var(--line); border-radius: 8px; background: var(--page); }
+.palace-tile-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; }
+.palace-tile-heading span, .palace-tile > small { color: var(--muted); font-size: 9px; }
+.palace-tile p { margin: 8px 0; font-size: 10px; line-height: 1.6; }
+.deity-summary { margin: 13px 0 0; color: var(--muted); font-size: 10px; line-height: 1.7; }
 .bottom-info { display: flex; gap: 9px; align-items: flex-start; color: var(--muted); }
 .bottom-info svg { flex: 0 0 auto; margin-top: 1px; }
 .bottom-info p { margin: 0; font-size: 10px; line-height: 1.7; }
+.license-details { margin: 18px 0; color: var(--muted); font-size: 10px; }
+.license-details summary { cursor: pointer; }
+.license-details pre { overflow: auto; max-height: 320px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; margin-top: 8px; background: var(--card); font: 9px/1.6 ui-monospace, monospace; white-space: pre-wrap; }
 .mobile-nav { display: none; }
 .sheet-backdrop { position: fixed; z-index: 20; inset: 0; display: flex; align-items: flex-end; background: rgb(20 27 24 / 38%); }
 .mobile-profile-sheet { width: 100%; max-height: 72vh; overflow: auto; border-radius: 15px 15px 0 0; padding: 22px 20px 30px; background: var(--card); }
@@ -145,6 +161,7 @@ h1, h2, p { margin-top: 0; }
   .content-wrap { padding: 34px 28px 28px; }
   .options-grid { grid-template-columns: minmax(80px, 1fr) 14px minmax(80px, 1fr); }
   .detail-field { grid-column: 1 / -1; }
+  .palace-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 650px) {
@@ -172,6 +189,9 @@ h1, h2, p { margin-top: 0; }
   .form-actions button { flex: 1; padding: 0 8px; font-size: 10px; }
   .result-card { padding: 19px 16px; }
   .request-summary { gap: 10px 14px; }
+  .palace-grid { grid-template-columns: 1fr; }
+  .annual-toolbar h3 { font-size: 13px; }
+  .year-button { padding: 0 7px; }
   .mobile-nav { position: fixed; z-index: 10; right: 0; bottom: 0; left: 0; display: flex; height: 61px; justify-content: space-around; border-top: 1px solid var(--line); background: var(--card); }
   .mobile-nav button { display: grid; min-width: 70px; place-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: var(--muted); font-size: 9px; }
   .mobile-nav button.active { color: var(--green); }
