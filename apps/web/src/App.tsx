@@ -118,6 +118,7 @@ function App() {
   const [isCalculating, setIsCalculating] = useState(false);
   const [workerStatus, setWorkerStatus] = useState<"loading" | "ready" | "failed">("loading");
   const [showSettings, setShowSettings] = useState(false);
+  const [showMobileSettings, setShowMobileSettings] = useState(false);
   const [showMobileProfiles, setShowMobileProfiles] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
@@ -464,6 +465,19 @@ function App() {
     link.download = filename;
     link.click();
     URL.revokeObjectURL(url);
+  }
+
+  function printReport() {
+    setShowMobileProfiles(false);
+    setShowMobileSettings(false);
+    window.setTimeout(() => {
+      try {
+        if (typeof window.print !== "function") throw new Error("print unsupported");
+        window.print();
+      } catch {
+        setNotice("此瀏覽器無法直接列印，請改用瀏覽器選單的「列印」或「分享」，或使用上方的 Markdown 匯出。");
+      }
+    }, 50);
   }
 
   async function exportReport() {
@@ -849,7 +863,7 @@ function App() {
                 <button type="button" className="secondary-button export-button" onClick={() => void exportReport()} disabled={isCalculating}>
                   <ArrowDownToLine size={16} />匯出完整報告（Markdown，{reportRequest.yearFrom}–{reportRequest.yearTo} 年）
                 </button>
-                <button type="button" className="secondary-button export-button" onClick={() => window.print()}>
+                <button type="button" className="secondary-button export-button" onClick={printReport}>
                   <FileText size={16} />列印／存成 PDF
                 </button>
               </div>
@@ -866,10 +880,27 @@ function App() {
           </details>
         </div>
         <nav className="mobile-nav" aria-label="主要導覽">
-          <button className="active"><LayoutDashboard size={18} /><span>報告</span></button>
-          <button onClick={() => setShowMobileProfiles(true)}><UserRound size={18} /><span>命盤</span></button>
-          <button onClick={() => setShowSettings((current) => !current)}><Settings2 size={18} /><span>設定</span></button>
+          <button type="button" className="active" onClick={() => { setShowMobileProfiles(false); setShowMobileSettings(false); window.scrollTo({ top: 0, behavior: "smooth" }); }}><LayoutDashboard size={18} /><span>報告</span></button>
+          <button type="button" onClick={() => { setShowMobileSettings(false); setShowMobileProfiles(true); }}><UserRound size={18} /><span>命盤</span></button>
+          <button type="button" onClick={() => { setShowMobileProfiles(false); setShowMobileSettings(true); }}><Settings2 size={18} /><span>設定</span></button>
         </nav>
+        {showMobileSettings && (
+          <div className="sheet-backdrop" onClick={() => setShowMobileSettings(false)}>
+            <section className="mobile-profile-sheet" aria-label="設定" onClick={(event) => event.stopPropagation()}>
+              <div className="sheet-heading"><h2>設定</h2><button className="sheet-close" onClick={() => setShowMobileSettings(false)}>關閉</button></div>
+              <div className="settings-panel mobile-settings">
+                <p>顯示模式</p>
+                <button className="setting-toggle" onClick={() => setIsDark((current) => !current)}>
+                  {isDark ? <Moon size={16} /> : <Sun size={16} />}
+                  {isDark ? "深色" : "淺色"}
+                </button>
+                <button className="delete-all" onClick={() => { deleteAllProfiles(); setShowMobileSettings(false); }}>
+                  <Trash2 size={15} /> 刪除全部命盤
+                </button>
+              </div>
+            </section>
+          </div>
+        )}
         {showMobileProfiles && (
           <div className="sheet-backdrop" onClick={() => setShowMobileProfiles(false)}>
             <section className="mobile-profile-sheet" aria-label="本機命盤" onClick={(event) => event.stopPropagation()}>

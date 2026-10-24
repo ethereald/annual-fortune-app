@@ -166,7 +166,7 @@ h1, h2, p { margin-top: 0; }
 
 @media (max-width: 650px) {
   .sidebar { display: none; }
-  .main-content { margin-left: 0; padding-bottom: 66px; }
+  .main-content { margin-left: 0; padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
   .topbar { height: 56px; padding: 0 18px; }
   .breadcrumb { font-size: 10px; }
   .top-actions { gap: 11px; }
@@ -192,8 +192,8 @@ h1, h2, p { margin-top: 0; }
   .palace-grid { grid-template-columns: 1fr; }
   .annual-toolbar h3 { font-size: 13px; }
   .year-button { padding: 0 7px; }
-  .mobile-nav { position: fixed; z-index: 10; right: 0; bottom: 0; left: 0; display: flex; height: 61px; justify-content: space-around; border-top: 1px solid var(--line); background: var(--card); }
-  .mobile-nav button { display: grid; min-width: 70px; place-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: var(--muted); font-size: 9px; }
+  .mobile-nav { position: fixed; z-index: 10; right: 0; bottom: 0; left: 0; display: flex; box-sizing: content-box; height: 64px; padding-bottom: max(16px, env(safe-area-inset-bottom)); justify-content: space-around; border-top: 1px solid var(--line); background: var(--card); }
+  .mobile-nav button { display: grid; min-width: 70px; place-content: center; justify-items: center; gap: 3px; border: 0; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; touch-action: manipulation; }
   .mobile-nav button.active { color: var(--green); }
 }
 
