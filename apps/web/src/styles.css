@@ -228,3 +228,8 @@ h1, h2, p { margin-top: 0; }
   .fortune-card,.palace-tile{break-inside:avoid}
 }
 .solar-range{display:block;color:var(--muted);font-size:11px;margin-top:4px}
+.profile-row{display:flex;align-items:center;gap:2px}
+.profile-row .profile-link{flex:1;min-width:0}
+.profile-row .profile-link span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.profile-action{flex:0 0 auto;display:grid;place-items:center;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--muted);cursor:pointer}
+.profile-action:hover{background:var(--green-soft);color:var(--green)}

@@ -8,9 +8,11 @@ import {
   ChevronDown,
   CircleHelp,
   CloudOff,
+  FileJson,
   FileText,
   LayoutDashboard,
   Moon,
+  Pencil,
   Plus,
   Settings2,
   ShieldCheck,
@@ -295,6 +297,47 @@ function App() {
     setNotice("資料已保存在此裝置。");
   }
 
+  function renameProfile(profile: SavedProfile) {
+    const name = window.prompt("修改命盤名稱", profile.name);
+    if (name === null) return;
+    const cleanName = name.trim();
+    if (!cleanName) {
+      setNotice("名稱不能空白。");
+      return;
+    }
+    setProfiles((current) => current.map((item) => (item.id === profile.id ? { ...item, name: cleanName } : item)));
+    setNotice(`已改名為「${cleanName}」。`);
+  }
+
+  function exportProfileJson(profile: SavedProfile) {
+    const { id: _id, ...data } = profile;
+    const json = JSON.stringify({ format: "annual-fortune-profile", version: 1, exportedAt: new Date().toISOString(), profile: data }, null, 2);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${profile.name.replace(/[\\/:*?"<>|]/g, "_")}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function renderProfileRow(profile: SavedProfile) {
+    return (
+      <div className={`profile-row ${activeProfileId === profile.id ? "selected" : ""}`} key={profile.id}>
+        <button className={`profile-link ${activeProfileId === profile.id ? "selected" : ""}`} onClick={() => loadProfile(profile)}>
+          <UserRound size={16} />
+          <span>{profile.name}</span>
+        </button>
+        <button type="button" className="profile-action" aria-label={`重新命名 ${profile.name}`} title="重新命名" onClick={() => renameProfile(profile)}>
+          <Pencil size={14} />
+        </button>
+        <button type="button" className="profile-action" aria-label={`匯出 ${profile.name} 為 JSON`} title="匯出 JSON" onClick={() => exportProfileJson(profile)}>
+          <FileJson size={14} />
+        </button>
+      </div>
+    );
+  }
+
   function loadProfile(profile: SavedProfile) {
     calculationSequence.current += 1;
     const { id, name: _name, createdAt: _createdAt, ...savedRequest } = profile;
@@ -471,16 +514,7 @@ function App() {
         <div className="profile-list">
           {profiles.length === 0 ? (
             <p className="empty-profiles">儲存的命盤會顯示在這裡</p>
-          ) : profiles.map((profile) => (
-            <button
-              className={`profile-link ${activeProfileId === profile.id ? "selected" : ""}`}
-              key={profile.id}
-              onClick={() => loadProfile(profile)}
-            >
-              <UserRound size={16} />
-              <span>{profile.name}</span>
-            </button>
-          ))}
+          ) : profiles.map(renderProfileRow)}
         </div>
         <div className="sidebar-bottom">
           <button className="nav-item" onClick={() => setShowSettings((current) => !current)}>
@@ -807,11 +841,7 @@ function App() {
               <div className="sheet-heading"><h2>本機命盤</h2><button className="sheet-close" onClick={() => setShowMobileProfiles(false)}>關閉</button></div>
               {profiles.length === 0
                 ? <p className="empty-profiles">尚未儲存命盤。填寫資料後，點選「儲存命盤」。</p>
-                : profiles.map((profile) => (
-                    <button className="profile-link" key={profile.id} onClick={() => loadProfile(profile)}>
-                      <UserRound size={16} /><span>{profile.name}</span>
-                    </button>
-                  ))}
+                : profiles.map(renderProfileRow)}
             </section>
           </div>
         )}
