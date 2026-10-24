@@ -15,8 +15,8 @@ export default defineConfig(({ mode }) => ({
             registerType: "prompt",
             includeAssets: ["fortune-mark.svg"],
             manifest: {
-              name: "流年 Annual Fortune",
-              short_name: "流年",
+              name: "天機錦囊 · 流年運程",
+              short_name: "天機錦囊",
               description: "離線、隱私優先的年度命盤工作台",
               theme_color: "#f7f4ef",
               background_color: "#f7f4ef",
