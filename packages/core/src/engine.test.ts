@@ -57,7 +57,7 @@ describe("computeYear", () => {
   it("returns the annual palace, transformations, and annual deities", () => {
     expect(computeYear(request, 2027)).toMatchObject({
       year: 2027,
-      palaceIndex: 5,
+      palaceIndex: 7,
       heavenlyStem: "丁",
       earthlyBranch: "未",
       transformations: [
@@ -71,6 +71,16 @@ describe("computeYear", () => {
         suiqian12: expect.any(Array),
       },
     });
+  });
+
+  it("indexes annual palaces by earthly branch starting from 子", () => {
+    const result = computeYear({ ...request, birthDate: "1980-01-25", birthTime: "00:40", gender: "male" }, 2026);
+
+    expect(result.earthlyBranch).toBe("午");
+    expect(result.palaceIndex).toBe(6);
+    expect(result.palaceNames[6]).toBe("命宫");
+    expect(result.palaceNames[5]).toBe("兄弟");
+    expect(result.palaceNames[0]).toBe("迁移");
   });
 
   it("rejects an invalid year", () => {

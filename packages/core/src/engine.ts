@@ -117,6 +117,11 @@ export function computeNatal(request: FortuneRequest): NatalCalculation {
   };
 }
 
+// iztro indexes palaces starting from 寅; the app indexes by earthly branch starting from 子.
+const iztroIndexToBranch = (index: number) => (index + 2) % 12;
+const iztroArrayToBranchOrder = <T>(values: readonly T[]): T[] =>
+  Array.from({ length: 12 }, (_, branch) => values[(branch + 10) % 12] as T);
+
 export function computeYear(request: FortuneRequest, year: number): AnnualCalculation {
   if (!Number.isInteger(year) || year < 1 || year > 9999) {
     throw new RangeError("Year must be a whole number from 1 to 9999.");
@@ -153,8 +158,8 @@ export function computeYear(request: FortuneRequest, year: number): AnnualCalcul
       solarDate,
       solarStart,
       solarEnd,
-      palaceIndex: monthly.index,
-      palaceNames: [...monthly.palaceNames],
+      palaceIndex: iztroIndexToBranch(monthly.index),
+      palaceNames: iztroArrayToBranchOrder(monthly.palaceNames),
       heavenlyStem: monthly.heavenlyStem,
       earthlyBranch: monthly.earthlyBranch,
       transformations: TRANSFORMATION_TYPES.flatMap((type, index) => {
@@ -167,15 +172,17 @@ export function computeYear(request: FortuneRequest, year: number): AnnualCalcul
   return {
     year,
     months,
-    palaceIndex: yearly.index,
-    palaceNames: [...yearly.palaceNames],
+    palaceIndex: iztroIndexToBranch(yearly.index),
+    palaceNames: iztroArrayToBranchOrder(yearly.palaceNames),
     heavenlyStem: yearly.heavenlyStem,
     earthlyBranch: yearly.earthlyBranch,
     transformations: TRANSFORMATION_TYPES.flatMap((type, index) => {
       const star = yearly.mutagen[index];
       return star ? [{ type, star }] : [];
     }),
-    annualStars: yearly.stars?.map((palaceStars) => palaceStars.map((star) => star.name)) ?? [],
+    annualStars: iztroArrayToBranchOrder(
+      yearly.stars?.map((palaceStars) => palaceStars.map((star) => star.name)) ?? Array.from({ length: 12 }, () => []),
+    ),
     annualDeities: {
       jiangqian12: [...yearly.yearlyDecStar.jiangqian12],
       suiqian12: [...yearly.yearlyDecStar.suiqian12],

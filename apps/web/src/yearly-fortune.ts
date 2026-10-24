@@ -42,11 +42,15 @@ function buildMonths(annual: AnnualCalculation, palaces: PalaceView[]): MonthFor
       return [{ type, star: starName, area }];
     });
 
+    // 四化固定一祿權科忌，總分恆定會讓每月同調；改按落宮重要性加權，並計入忌與祿同宮的化解。
+    const keyAreas = new Set(["命", "財帛", "官祿", "疾厄", "田宅"]);
     let score = 0;
     for (const land of lands) {
-      score += land.type === "祿" || land.type === "科" ? 1 : land.type === "權" ? 0.5 : -1.5;
+      const weight = keyAreas.has(land.area) ? 1.5 : 1;
+      const base = land.type === "祿" ? 1 : land.type === "科" ? 0.75 : land.type === "權" ? 0.5 : -1.5;
+      score += base * weight;
     }
-    const tone: Tone = score >= 1 ? "favorable" : score < 0 ? "careful" : "steady";
+    const tone: Tone = score >= 1 ? "favorable" : score <= -0.25 ? "careful" : "steady";
 
     const parts = [`本月重心落在${focusInfo?.topic ?? "自身"}方面。`];
     const good = lands.filter((land) => land.type !== "忌" && AREAS[land.area]);
@@ -278,7 +282,7 @@ export function buildYearlyFortune(natal: NatalCalculation, annual: AnnualCalcul
     const info = AREAS[area];
     return {
       title: `${landing.star}${TRANS_INFO[landing.type].name}・${info?.label ?? area}`,
-      text: `${TRANS_INFO[landing.type].name}${TRANS_INFO[landing.type].meaning}，今年落在${info?.topic ?? area}方面。${TRANS_AREA[landing.type][area] ?? ""}`,
+      text: `${TRANS_INFO[landing.type].name}${TRANS_INFO[landing.type].meaning}，今年落在${info?.topic ?? area}方面。            ${TRANS_AREA[landing.type][area] ?? ""}`,
     };
   });
 
