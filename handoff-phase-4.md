@@ -10,11 +10,13 @@ Read first: `handoff-phase-3.md` (background, dataset rules), `packages/core/dat
 - **Export:** "匯出完整報告" writes Markdown for the whole year range at the chosen depth, and "列印／存成 PDF" calls `window.print()` with print CSS in `styles.css`.
 - **Old interpretation data:** the natal 宮位星曜解讀 is now a collapsed `<details>` section with attribution, because it was too technical.
 - **PWA:** `vite.config.ts` precache limit raised to 4 MiB. The single-file build is about 3.07 MB.
+- **Saved 命盤 management** (in `App.tsx`: `renameProfile`, `exportProfileJson`, `importProfiles`, `renderProfileRow`): rename uses `window.prompt`. Export writes `{format:"annual-fortune-profile", version:1, exportedAt, profile}` without the id. Import accepts several `.json` files of up to 100 KB, validates them, assigns new ids, and reports the imported and skipped counts. Duplicate names are not detected. Tested in a browser, with `prompt` stubbed.
+- **Offline PWA verified:** the service worker installed, the app reloaded with the network off, and the 線上 / 目前離線 badge and banner follow the browser's online/offline events. The install and update prompts (`registerType: "prompt"`) were not tested.
 - **Checked:** `npm test`, `npm run build` and `npm run build:single` pass, and the UI and export were tested in a browser.
 
 ## Open items
-1. **No tests** for `yearly-fortune.ts`, the monthly engine data or the export. Add unit tests, for example the leap-month 2025 ranges and the 精簡 / 標準 / 深入 differences.
-2. **README** still describes the old detail levels. A short Phase 3 note was added, but it does not mention 逐月 or the two export buttons.
+1. **No tests** for `yearly-fortune.ts`, the monthly engine data , the export, or profile import validation. Add unit tests, for example the leap-month 2025 ranges and the 精簡 / 標準 / 深入 differences.
+2. **README** still describes the old detail levels. A short Phase 3 note was added, but it does not mention 逐月 or the two export buttons, or rename / import / export of saved 命盤.
 3. **Template wording needs human review** by someone who knows 紫微斗數. Monthly text reuses the yearly area text with 今年 swapped for 本月. Leap-month 四化 are not checked against a reference. The monthly "本月重心" uses `monthly.index` mapped to natal palaces, which is also unchecked.
 4. The PDF/print layout was never opened in a browser.
 5. `rightsConfirmed: true` in `sources.json` still needs human confirmation of the dataset license.
